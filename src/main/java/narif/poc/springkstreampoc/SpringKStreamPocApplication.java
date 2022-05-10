@@ -67,7 +67,11 @@ public class SpringKStreamPocApplication {
     @Bean
     public Function<KStream<String, String>, KStream<String, String>> upperCaseProcessor(){
         return stringStringKStream -> stringStringKStream
-                .mapValues(value -> value.toUpperCase());
+                .mapValues(this::getToUpperCase);
+    }
+
+    private String getToUpperCase(String value) {
+        return value.toUpperCase();
     }
 
 }
