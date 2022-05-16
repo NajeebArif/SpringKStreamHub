@@ -31,26 +31,6 @@ public class KafkaStreamsConfig {
         };
     }
 
-//    @Bean
-//    @Primary
-//    public StreamsBuilderFactoryBeanCustomizer streamsBuilderFactoryBeanCustomizer() {
-//        return factoryBean -> {
-//            factoryBean.setStreamsUncaughtExceptionHandler(getStreamsUncaughtExceptionHandler());
-////            factoryBean.setKafkaStreamsCustomizer(kafkaStreams ->
-////                    kafkaStreams.setUncaughtExceptionHandler(getStreamsUncaughtExceptionHandler()));
-//        };
-//    }
-
-//    @Bean
-//    public StreamsBuilderFactoryBeanCustomizer streamsBuilderFactoryBeanCustomizer() {
-//        return factoryBean -> {
-//            if (isOrderProcessorStream(factoryBean)) {
-//                factoryBean.setKafkaStreamsCustomizer(kafkaStreams ->
-//                        kafkaStreams.setUncaughtExceptionHandler(getStreamsUncaughtExceptionHandler()));
-//            }
-//        };
-//    }
-
     private StreamsUncaughtExceptionHandler getStreamsUncaughtExceptionHandler() {
         return exception -> {
             Throwable cause = exception.getCause();
