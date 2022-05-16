@@ -13,12 +13,17 @@ import org.apache.kafka.streams.processor.ProcessorContext;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.kafka.StreamsBuilderFactoryBeanCustomizer;
+import org.springframework.cloud.stream.annotation.StreamRetryTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.config.KafkaStreamsCustomizer;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.config.StreamsBuilderFactoryBeanConfigurer;
 import org.springframework.messaging.Message;
+import org.springframework.retry.RetryPolicy;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -30,6 +35,21 @@ public class SpringKStreamPocApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SpringKStreamPocApplication.class, args);
+    }
+
+    @Bean
+    @StreamRetryTemplate
+    RetryTemplate myRetryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+
+        RetryPolicy retryPolicy = new SimpleRetryPolicy(3);
+        FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+        backOffPolicy.setBackOffPeriod(2);
+
+        retryTemplate.setBackOffPolicy(backOffPolicy);
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        return retryTemplate;
     }
 
     @Bean
@@ -50,6 +70,15 @@ public class SpringKStreamPocApplication {
                             return new KeyValue<>(key, msg);
                         }catch (Exception e){
                             System.err.println("===================ERROR: "+e.getMessage());
+                            myRetryTemplate().execute(retryContext ->{
+                                final int retryCount = retryContext.getRetryCount();
+                                log.warn("Retrying the message key: {}",key);
+                                log.warn("Current Retry Count: {}",retryCount);
+                                return new KeyValue(key, OrderProcessorService.processOrderMsg(value));
+                            }, context2 ->{
+                                context.commit();
+                                return new KeyValue(key, null);
+                            });
                             context.commit();
                             return new KeyValue<>(key, null);
                         }
