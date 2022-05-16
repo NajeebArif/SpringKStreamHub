@@ -65,23 +65,17 @@ public class SpringKStreamPocApplication {
 
                     @Override
                     public KeyValue<String, OrderInputMsg> transform(String key, OrderInputMsg value) {
-                        try{
-                            final OrderInputMsg msg = OrderProcessorService.processOrderMsg(value);
-                            return new KeyValue<>(key, msg);
-                        }catch (Exception e){
-                            System.err.println("===================ERROR: "+e.getMessage());
-                            myRetryTemplate().execute(retryContext ->{
-                                final int retryCount = retryContext.getRetryCount();
-                                log.warn("Retrying the message key: {}",key);
-                                log.warn("Current Retry Count: {}",retryCount);
-                                return new KeyValue(key, OrderProcessorService.processOrderMsg(value));
-                            }, context2 ->{
-                                context.commit();
-                                return new KeyValue(key, null);
-                            });
+                        return myRetryTemplate().execute(retryContext -> {
+                            final int retryCount = retryContext.getRetryCount();
+                            if(retryCount > 0){
+                                log.warn("Retrying the message key: {}", key);
+                                log.warn("Current Retry Count: {}", retryCount);
+                            }
+                            return new KeyValue<String, OrderInputMsg>(key, OrderProcessorService.processOrderMsg(value));
+                        }, context2 -> {
                             context.commit();
-                            return new KeyValue<>(key, null);
-                        }
+                            return new KeyValue<String, OrderInputMsg>(key, null);
+                        });
                     }
 
                     @Override
@@ -89,8 +83,6 @@ public class SpringKStreamPocApplication {
                 })
                 .peek((key, value) -> log.info("ORDER CREDIT CARD INFO MASKED FOR KEY: {}, VALUE:{}", key, value))
                 .filter((key, value) -> value!=null);
-
-//                .mapValues(OrderProcessorService::processOrderMsg);
     }
 
     @Bean
