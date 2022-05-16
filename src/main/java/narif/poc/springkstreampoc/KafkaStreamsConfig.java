@@ -17,17 +17,14 @@ public class KafkaStreamsConfig {
     @Bean
     public StreamsBuilderFactoryBeanConfigurer streamsCustomizer() {
         return new StreamsBuilderFactoryBeanConfigurer() {
-
             @Override
             public void configure(StreamsBuilderFactoryBean factoryBean) {
                 factoryBean.setStreamsUncaughtExceptionHandler(getStreamsUncaughtExceptionHandler());
             }
-
             @Override
             public int getOrder() {
                 return Integer.MAX_VALUE - 10000;
             }
-
         };
     }
 
