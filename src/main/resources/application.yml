@@ -20,8 +20,8 @@ spring:
           binder:
             brokers: localhost:29092
             functions:
-              orderProcessor:
-                applicationId: 'OrderProcessorStream'
+              orderBranchingProcessor:
+                applicationId: 'OrderBranchingProcessor'
               upperCaseProcessor:
                 applicationId: 'lowerToUpperCaseStreamProcessor'
       function:
