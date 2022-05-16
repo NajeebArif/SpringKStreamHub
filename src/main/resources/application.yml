@@ -3,6 +3,12 @@ spring:
   cloud:
     stream:
       bindings:
+        orderBranchingProcessor-in-0:
+          destination: raw-order-topic
+        orderBranchingProcessor-out-0:
+          destination: order-topic
+        orderBranchingProcessor-out-1:
+          destination: errored-order
         orderProcessor-in-0:
           destination: raw-order-topic
         orderProcessor-out-0:
@@ -10,7 +16,9 @@ spring:
         upperCaseProcessor-in-0:
           destination: src-textMsg-topic
         upperCaseProcessor-out-0:
-          destination: out-textMsg-topic
+          destination: out-textMsg-topic-0
+        upperCaseProcessor-out-1:
+          destination: out-textMsg-topic-1
       kafka:
         streams:
           binder:
@@ -21,4 +29,5 @@ spring:
               upperCaseProcessor:
                 applicationId: 'lowerToUpperCaseStreamProcessor'
       function:
-        definition: orderProcessor;upperCaseProcessor
+        definition: orderProcessor;upperCaseProcessor;orderBranchingProcessor
+#        definition: orderBranchingProcessor;upperCaseProcessor

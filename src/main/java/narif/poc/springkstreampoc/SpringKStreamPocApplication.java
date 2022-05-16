@@ -1,32 +1,21 @@
 package narif.poc.springkstreampoc;
 
 import lombok.extern.slf4j.Slf4j;
-import narif.poc.springkstreampoc.exceptions.InvalidCreditCardException;
 import narif.poc.springkstreampoc.model.OrderInputMsg;
-import org.apache.kafka.streams.KafkaStreams;
+import narif.poc.springkstreampoc.model.Tuple;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Transformer;
+import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.kafka.StreamsBuilderFactoryBeanCustomizer;
 import org.springframework.cloud.stream.annotation.StreamRetryTemplate;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.kafka.config.KafkaStreamsCustomizer;
-import org.springframework.kafka.config.StreamsBuilderFactoryBean;
-import org.springframework.kafka.config.StreamsBuilderFactoryBeanConfigurer;
-import org.springframework.messaging.Message;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
-import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.Map;
 import java.util.function.Function;
 
 @SpringBootApplication
@@ -53,6 +42,38 @@ public class SpringKStreamPocApplication {
     }
 
     @Bean
+    public Function<KStream<String, OrderInputMsg>, KStream<String, OrderInputMsg>[]> orderBranchingProcessor(){
+        Predicate<String, Tuple<Throwable, OrderInputMsg>> isSuccessful = (key, value) -> value.getOptionalT().isEmpty();
+        Predicate<String, Tuple<Throwable, OrderInputMsg>> isFailure = (key, value) -> value.getOptionalT().isPresent();
+        return stringOrderInputMsgKStream -> {
+            final Map<String, KStream<String, Tuple<Throwable, OrderInputMsg>>> stringKStreamMap = stringOrderInputMsgKStream
+                    .peek((key, value) -> log.info("Branch Order input msg received with key: {} and payload: {}", key, value))
+                    .map(this::getTransformedMessage)
+                    .split()
+                    .branch(isSuccessful)
+                    .branch(isFailure)
+                    .noDefaultBranch();
+            return stringKStreamMap.values()
+                    .stream()
+                    .map(stringTupleKStream -> stringTupleKStream
+                            .mapValues((readOnlyKey, value) -> value.getOptionalU()
+                                    .orElseGet(OrderInputMsg::new)))
+                    .toArray(KStream[]::new);
+        };
+    }
+
+    private KeyValue<String, Tuple<Throwable, OrderInputMsg>> getTransformedMessage(String key, OrderInputMsg value) {
+        try{
+            final OrderInputMsg msg = OrderProcessorService.processOrderMsg(value);
+            final Tuple<Throwable, OrderInputMsg> inputMsgTuple = new Tuple<>(null, msg);
+            return new KeyValue<>(key, inputMsgTuple);
+        }catch (Exception e){
+            final Tuple<Throwable, OrderInputMsg> inputMsgTuple = new Tuple<>(e, value);
+            return new KeyValue<>(key, inputMsgTuple);
+        }
+    }
+
+    @Bean
     public Function<KStream<String, OrderInputMsg>, KStream<String, OrderInputMsg>> orderProcessor(){
         return stringOrderInputMsgKStream -> stringOrderInputMsgKStream
                 .peek((key, value) -> log.info("Order input msg received with key: {} and payload: {}", key, value))
@@ -62,7 +83,6 @@ public class SpringKStreamPocApplication {
                     public void init(ProcessorContext context) {
                         this.context = context;
                     }
-
                     @Override
                     public KeyValue<String, OrderInputMsg> transform(String key, OrderInputMsg value) {
                         try{
@@ -83,20 +103,27 @@ public class SpringKStreamPocApplication {
                             return new KeyValue<>(key, null);
                         }
                     }
-
                     @Override
                     public void close() {}
                 })
                 .peek((key, value) -> log.info("ORDER CREDIT CARD INFO MASKED FOR KEY: {}, VALUE:{}", key, value))
                 .filter((key, value) -> value!=null);
-
-//                .mapValues(OrderProcessorService::processOrderMsg);
     }
 
     @Bean
-    public Function<KStream<String, String>, KStream<String, String>> upperCaseProcessor(){
-        return stringStringKStream -> stringStringKStream
-                .mapValues(value -> value.toUpperCase());
+    public Function<KStream<String, String>, KStream<String, String>[]> upperCaseProcessor(){
+        return stringStringKStream -> {
+            final Map<String, KStream<String, String>> first = stringStringKStream
+                    .peek((key, value) -> log.info("TEXT MSG READ."))
+                    .mapValues(value -> value.toUpperCase())
+                    .split()
+                    .branch((key, value) -> value.contains("FIRST"))
+                    .branch((key, value) -> value.contains("SECOND"))
+                    .noDefaultBranch();
+            return first.values()
+                    .stream().map(stringStringKStream1 -> stringStringKStream1.mapValues((readOnlyKey, value) -> value.toLowerCase()))
+                    .toArray(KStream[]::new);
+        };
     }
 
 }

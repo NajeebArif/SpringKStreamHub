@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Disabled
+//@Disabled
 class SpringKStreamPocApplicationTests {
 
     @Autowired
@@ -21,7 +21,14 @@ class SpringKStreamPocApplicationTests {
 
     @Test
     void contextLoads() {
-        stringStringKafkaTemplate.send(inputTopic, "My First Message.");
+        for (int i = 0; i < 10; i++) {
+            String data = "My First Message.";
+            if(i%2==0) {
+                data = "My Second Message";
+            }
+            stringStringKafkaTemplate.send(inputTopic, data);
+            System.out.println("MESSAGE SENT.");
+        }
     }
 
 }
