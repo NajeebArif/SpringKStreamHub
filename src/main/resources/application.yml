@@ -9,10 +9,6 @@ spring:
           destination: order-topic
         orderBranchingProcessor-out-1:
           destination: errored-order
-        orderProcessor-in-0:
-          destination: raw-order-topic
-        orderProcessor-out-0:
-          destination: sane-order-topic
         upperCaseProcessor-in-0:
           destination: src-textMsg-topic
         upperCaseProcessor-out-0:
@@ -29,5 +25,5 @@ spring:
               upperCaseProcessor:
                 applicationId: 'lowerToUpperCaseStreamProcessor'
       function:
-        definition: orderProcessor;upperCaseProcessor;orderBranchingProcessor
-#        definition: orderBranchingProcessor;upperCaseProcessor
+#        definition: orderProcessor;upperCaseProcessor;orderBranchingProcessor
+        definition: orderBranchingProcessor;upperCaseProcessor
