@@ -35,11 +35,15 @@ public class SpringKStreamPocApplication {
                     .noDefaultBranch();
             return stringKStreamMap.values()
                     .stream()
-                    .map(stringTupleKStream -> stringTupleKStream
-                            .mapValues((readOnlyKey, value) -> value.getOptionalU()
-                                    .orElseGet(OrderInputMsg::new)))
+                    .map(this::getStringOrderInputMsgKStream)
                     .toArray(KStream[]::new);
         };
+    }
+
+    private KStream<String, OrderInputMsg> getStringOrderInputMsgKStream(KStream<String, Tuple<Throwable, OrderInputMsg>> stringTupleKStream) {
+        return stringTupleKStream
+                .mapValues((readOnlyKey, value) -> value.getOptionalU()
+                        .orElseGet(OrderInputMsg::new));
     }
 
     private KeyValue<String, Tuple<Throwable, OrderInputMsg>> getTransformedMessage(String key, OrderInputMsg value) {
