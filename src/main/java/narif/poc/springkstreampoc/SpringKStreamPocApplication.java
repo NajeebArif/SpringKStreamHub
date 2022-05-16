@@ -1,32 +1,21 @@
 package narif.poc.springkstreampoc;
 
 import lombok.extern.slf4j.Slf4j;
-import narif.poc.springkstreampoc.exceptions.InvalidCreditCardException;
 import narif.poc.springkstreampoc.model.OrderInputMsg;
-import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Transformer;
+import org.apache.kafka.streams.kstream.ValueMapper;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.kafka.StreamsBuilderFactoryBeanCustomizer;
 import org.springframework.cloud.stream.annotation.StreamRetryTemplate;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.kafka.config.KafkaStreamsCustomizer;
-import org.springframework.kafka.config.StreamsBuilderFactoryBean;
-import org.springframework.kafka.config.StreamsBuilderFactoryBeanConfigurer;
-import org.springframework.messaging.Message;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
-import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 @SpringBootApplication
@@ -71,10 +60,10 @@ public class SpringKStreamPocApplication {
                                 log.warn("Retrying the message key: {}", key);
                                 log.warn("Current Retry Count: {}", retryCount);
                             }
-                            return new KeyValue<String, OrderInputMsg>(key, OrderProcessorService.processOrderMsg(value));
+                            return new KeyValue<>(key, OrderProcessorService.processOrderMsg(value));
                         }, context2 -> {
                             context.commit();
-                            return new KeyValue<String, OrderInputMsg>(key, null);
+                            return new KeyValue<>(key, null);
                         });
                     }
 
@@ -88,7 +77,7 @@ public class SpringKStreamPocApplication {
     @Bean
     public Function<KStream<String, String>, KStream<String, String>> upperCaseProcessor(){
         return stringStringKStream -> stringStringKStream
-                .mapValues(value -> value.toUpperCase());
+                .mapValues((ValueMapper<String, String>) String::toUpperCase);
     }
 
 }
