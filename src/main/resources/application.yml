@@ -1,0 +1,24 @@
+
+spring:
+  cloud:
+    stream:
+      bindings:
+        orderProcessor-in-0:
+          destination: raw-order-topic
+        orderProcessor-out-0:
+          destination: sane-order-topic
+        upperCaseProcessor-in-0:
+          destination: src-textMsg-topic
+        upperCaseProcessor-out-0:
+          destination: out-textMsg-topic
+      kafka:
+        streams:
+          binder:
+            brokers: localhost:29092
+            functions:
+              orderProcessor:
+                applicationId: 'OrderProcessorStream'
+              upperCaseProcessor:
+                applicationId: 'lowerToUpperCaseStreamProcessor'
+      function:
+        definition: orderProcessor;upperCaseProcessor

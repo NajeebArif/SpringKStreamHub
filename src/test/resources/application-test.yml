@@ -1,0 +1,8 @@
+test-input-topic: src-textMsg-topic
+test-output-topic: out-textMsg-topic
+
+spring:
+  kafka:
+#    producer:
+#      value-serializer: JsonSerializer.class
+    bootstrap-servers: 'localhost:29092'
