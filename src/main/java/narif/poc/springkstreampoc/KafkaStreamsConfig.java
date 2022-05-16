@@ -55,7 +55,10 @@ public class KafkaStreamsConfig {
         return exception -> {
             Throwable cause = exception.getCause();
             if (cause.getClass().equals(InvalidCreditCardException.class)) {
-                log.error(cause.getMessage());
+                final String message = cause.getMessage();
+                System.err.println("**************************************************************");
+                System.err.println("Uncaught Exception encountered, REPLACING THE THREAD. Exception Message: "+message);
+                System.err.println("**************************************************************");
                 return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.REPLACE_THREAD;
             }
             return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION;
