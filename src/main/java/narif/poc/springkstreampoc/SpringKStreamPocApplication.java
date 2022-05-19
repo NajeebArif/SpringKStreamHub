@@ -3,9 +3,11 @@ package narif.poc.springkstreampoc;
 import lombok.extern.slf4j.Slf4j;
 import narif.poc.springkstreampoc.model.OrderInputMsg;
 import narif.poc.springkstreampoc.model.Tuple;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Predicate;
+import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +21,16 @@ public class SpringKStreamPocApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SpringKStreamPocApplication.class, args);
+    }
+
+    @Bean
+    public Function<KStream<String, OrderInputMsg>, KStream<String, OrderInputMsg>> orderProcessWithSideEffect(){
+        return stringOrderInputMsgKStream -> {
+            KStream<String, String> stringStringKStream = stringOrderInputMsgKStream.mapValues((readOnlyKey, value) -> value.getOrderId());
+            stringStringKStream.to("out-textMsg-topic-0", Produced.with(Serdes.String(), Serdes.String()));
+            return stringOrderInputMsgKStream
+                    .mapValues((readOnlyKey, value) -> OrderProcessorService.processOrderMsg(value));
+        };
     }
 
     @Bean

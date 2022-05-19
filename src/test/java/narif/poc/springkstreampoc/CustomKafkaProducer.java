@@ -32,8 +32,8 @@ public class CustomKafkaProducer {
         String topicName = OrderProducerTest.RAW_ORDER_TOPIC;
         for (int i = 0; i < 10; i++) {
             OrderInputMsg orderInputMsg = getOrderInputMsg(i);
-            if(i==2)
-                orderInputMsg.setCreditCardNumber("magic");
+//            if(i==2)
+//                orderInputMsg.setCreditCardNumber("magic");
             producer.send(new ProducerRecord<>(topicName, UUID.randomUUID().toString(),orderInputMsg )).get();
             System.out.println("MSG SENT.");
         }

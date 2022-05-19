@@ -3,6 +3,10 @@ spring:
   cloud:
     stream:
       bindings:
+        orderProcessWithSideEffect-in-0:
+          destination: raw-order-topic
+        orderProcessWithSideEffect-out-0:
+          destination: order-topic
         orderBranchingProcessor-in-0:
           destination: raw-order-topic
         orderBranchingProcessor-out-0:
@@ -26,4 +30,4 @@ spring:
                 applicationId: 'lowerToUpperCaseStreamProcessor'
       function:
 #        definition: orderProcessor;upperCaseProcessor;orderBranchingProcessor
-        definition: orderBranchingProcessor;upperCaseProcessor
+        definition: orderBranchingProcessor;upperCaseProcessor;orderProcessWithSideEffect
