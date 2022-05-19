@@ -26,7 +26,8 @@ public class SpringKStreamPocApplication {
     @Bean
     public Function<KStream<String, OrderInputMsg>, KStream<String, OrderInputMsg>> orderProcessWithSideEffect(){
         return stringOrderInputMsgKStream -> {
-            KStream<String, String> stringStringKStream = stringOrderInputMsgKStream.mapValues((readOnlyKey, value) -> value.getOrderId());
+            KStream<String, String> stringStringKStream = stringOrderInputMsgKStream
+                    .mapValues((readOnlyKey, value) -> value.getOrderId());
             stringStringKStream.to("out-textMsg-topic-0", Produced.with(Serdes.String(), Serdes.String()));
             return stringOrderInputMsgKStream
                     .mapValues((readOnlyKey, value) -> OrderProcessorService.processOrderMsg(value));
